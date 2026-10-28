@@ -14,3 +14,9 @@ I snatch at images in mathematics, linguistics, philosophy, psychology, and comp
 
 In the spirit of [Long Content](https://www.gwern.net/About#long-content), I intend to write evolving drafts on the topics mentioned above.
 
+
+<p class="nerd-badge">
+<a href="https://www.nerdtests.com/ft_nt2.php">
+<img src="https://www.nerdtests.com/images/badge/nt2/97710d75b8ea459e.png" alt="NerdTests.com says I'm a Nerd God.  Click here to take the Nerd Test, get nerdy images and jokes, and talk to others on the nerd forum!">
+</a>
+</p>
