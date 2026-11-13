@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>a-peirogon</title>
+    <link href="https://a-peirogon.github.io/feed.xml" rel="self" />
+    <link href="https://a-peirogon.github.io" />
+    <id>https://a-peirogon.github.io/feed.xml</id>
+    <author>
+        <name>a-peirogon</name>
+        
+    </author>
+    <updated>2026-11-13T00:00:00Z</updated>
+    <entry>
+    <title>Aprendizaje profundo categórico</title>
+    <link href="https://a-peirogon.github.io/posts/aprendizaje-profundo-categorico.html" />
+    <id>https://a-peirogon.github.io/posts/aprendizaje-profundo-categorico.html</id>
+    <published>2026-11-13T00:00:00Z</published>
+    <updated>2026-11-13T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<section id="dos-maneras-de-describir-una-red" class="level2">
+<h2>Dos maneras de describir una red</h2>
+<p>Hay, en la práctica, dos maneras de especificar una arquitectura de red neuronal. La primera va <em>de arriba abajo</em>: se fijan las <strong>restricciones</strong> que el modelo debe cumplir (por ejemplo, respetar la estructura de los datos que procesa) y de ellas se deduce la forma de las capas. La segunda va <em>de abajo arriba</em>: se describe la <strong>implementación</strong>, la secuencia de operaciones con tensores que realiza el paso hacia delante y hacia atrás.</p>
+<p>El ejemplo más logrado del primer enfoque es el aprendizaje profundo geométrico (<em>geometric deep learning</em>, GDL), que usa teoría de grupos y de representaciones para describir las capas mediante restricciones de simetría. Las capas concretas se obtienen resolviendo <em>restricciones de equivarianza</em>: la convolución aparece como solución exacta a la equivarianza lineal bajo traslaciones en una rejilla; el paso de mensajes y la autoatención, como casos de equivarianza bajo permutaciones en grafos. El segundo enfoque está encarnado en las bibliotecas de diferenciación automática (TensorFlow, PyTorch, JAX), que tratan las redes como «funciones puras» y permiten inferir formas de tensores y automatizar la retropropagación.</p>
+<p>El artículo de Gavranović, Lessard, Dudzik, von Glehn, Araújo y Veličković<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> parte de que cada enfoque, por separado, se queda corto. El <span class="smallcaps">GDL</span> está atado a los grupos: solo puede expresar equivarianza respecto de simetrías, es decir, de operaciones invertibles, y muchas operaciones que interesan en informática no lo son (un algoritmo de caminos mínimos, por ejemplo, transforma los datos de manera irreversible). Las bibliotecas de diferenciación automática, por su parte, describen la sintaxis de un programa, pero inferir sus propiedades generales a partir de esa sintaxis es difícil salvo en los casos más simples.</p>
+<blockquote>
+<p>«If we want a <em>general</em> guiding framework for <em>all</em> of deep learning, this needs to change.» (Gavranović et al., p. 1)</p>
+</blockquote>
+</section>
+<section id="la-propuesta" class="level2">
+<h2>La propuesta</h2>
+<p>La tesis del artículo es que un marco general para el aprendizaje profundo tiene que tender un puente entre restricciones e implementaciones, que ese puente debe venir de la informática y que debe generalizar a la vez la teoría de grupos (de donde viene el GDL) y la programación funcional (de donde vienen las bibliotecas de diferenciación). El candidato natural, según los autores, es la teoría de categorías; en concreto, el álgebra universal de mónadas valorada en una 2-categoría de funciones paramétricas.</p>
+<p>El título tiene una lectura precisa, que una nota a pie de la primera página aclara: debe entenderse como «Categorical Deep Learning is an Algebraic {Theory of All Architectures}» y no como «… is an {Algebraic Theory} of All Architectures». Es decir, se propone una teoría de todas las arquitecturas que es algebraica, no una «teoría algebraica» en el sentido técnico de Lawvere (aunque esas teorías aparecen en un apéndice).</p>
+<p>La teoría de categorías se presenta aquí con un argumento pragmático:</p>
+<blockquote>
+<p>«Minimally, it may be conceived of as a battle-tested system of <em>interfaces</em> that are learned once, and then reliably applied across scientific fields.» (Gavranović et al., p. 2)</p>
+</blockquote>
+<p>Los autores señalan su uso ya extendido en teoría de sistemas, aprendizaje bayesiano, teoría de la información, diferenciación automática, procesamiento de lenguaje natural e inferencia causal, y la existencia de una descripción categórica completa del aprendizaje basado en gradientes (Cruttwell et al., 2022), en la que se apoya buena parte del trabajo.</p>
+</section>
+<section id="categorías-funtores-y-transformaciones-naturales" class="level2">
+<h2>Categorías, funtores y transformaciones naturales</h2>
+<p>El artículo recuerda tres nociones básicas. Una <strong>categoría</strong> consta de objetos y morfismos entre ellos, con un morfismo identidad para cada objeto y una composición asociativa. El ejemplo de referencia es <span class="math inline">\(\mathsf{Set}\)</span>, cuyos objetos son conjuntos y cuyos morfismos son funciones. Otro ejemplo, importante para el GDL, es que un grupo <span class="math inline">\(G\)</span> puede verse como una categoría <span class="math inline">\(\mathcal{B}G\)</span> con un solo objeto, cuyos morfismos son los elementos de <span class="math inline">\(G\)</span>; si los morfismos no son necesariamente invertibles, se obtiene un monoide.</p>
+<p>Un <strong>funtor</strong> <span class="math inline">\(F : \mathcal{C} \to \mathcal{D}\)</span> lleva objetos y morfismos de una categoría a otra respetando identidades y composición; si <span class="math inline">\(\mathcal{C} = \mathcal{D}\)</span>, se llama <em>endofuntor</em>. Una <strong>transformación natural</strong> <span class="math inline">\(\alpha : F \Rightarrow G\)</span> entre dos funtores elige, para cada objeto <span class="math inline">\(X\)</span>, un morfismo <span class="math inline">\(\alpha_X : F(X) \to G(X)\)</span> de manera que, para todo <span class="math inline">\(f : X \to Y\)</span>,</p>
+<p><span class="math display">\[\alpha_Y \circ F(f) = G(f) \circ \alpha_X .\]</span></p>
+<p>Con estas tres piezas se construye el resto.</p>
+</section>
+<section id="mónadas-y-sus-álgebras" class="level2">
+<h2>Mónadas y sus álgebras</h2>
+<p>Una <strong>mónada</strong> sobre una categoría <span class="math inline">\(\mathcal{C}\)</span> es una terna <span class="math inline">\((M, \eta, \mu)\)</span>: un endofuntor <span class="math inline">\(M\)</span> y dos transformaciones naturales, la unidad <span class="math inline">\(\eta : \mathrm{id} \Rightarrow M\)</span> y la multiplicación <span class="math inline">\(\mu : M \circ M \Rightarrow M\)</span>, que cumplen ciertas leyes de coherencia. El ejemplo central es la <em>mónada de acción de grupo</em>: dado un grupo <span class="math inline">\(G\)</span>, el endofuntor <span class="math inline">\(G \times - : \mathsf{Set} \to \mathsf{Set}\)</span> lleva cada conjunto <span class="math inline">\(X\)</span> a <span class="math inline">\(G \times X\)</span>; la unidad envía <span class="math inline">\(x\)</span> a <span class="math inline">\((e, x)\)</span> y la multiplicación envía <span class="math inline">\((g, h, x)\)</span> a <span class="math inline">\((gh, x)\)</span>.</p>
+<p>Esta mónada es una teoría formal de las acciones de un grupo, pero no las ejecuta sobre ningún dato:</p>
+<blockquote>
+<p>«Group action monads are formal theories of group actions, but they do not allow us to actually <em>execute</em> them on data. This is what <em>algebras</em> do.» (Gavranović et al., p. 4)</p>
+</blockquote>
+<p>Un <strong>álgebra</strong> para la mónada es un par <span class="math inline">\((A, a)\)</span>: un objeto portador <span class="math inline">\(A\)</span> y un morfismo <span class="math inline">\(a : M(A) \to A\)</span> compatible con la unidad y la multiplicación. Para la mónada <span class="math inline">\(G \times -\)</span>, un álgebra es exactamente una acción de <span class="math inline">\(G\)</span> sobre <span class="math inline">\(A\)</span>. Si el portador es <span class="math inline">\(\mathbb{R}^{\mathbb{Z}_w \times \mathbb{Z}_h}\)</span>, datos sobre una rejilla de <span class="math inline">\(w \times h\)</span>, las acciones habituales son traslaciones, rotaciones, permutaciones, escalados o reflexiones. La traslación, por ejemplo, se escribe <span class="math inline">\(((i&#39;, j&#39;) \blacktriangleright x)(i, j) = x(i - i&#39;, j - j&#39;)\)</span>.</p>
+<p>Un álgebra describe un dato de entrada o de salida de la red. Para describir la red misma hace falta un <strong>homomorfismo de álgebras</strong>: un morfismo <span class="math inline">\(f : A \to B\)</span> que hace conmutar el cuadrado</p>
+<p><span class="math display">\[
+\begin{CD}
+M(A) @&gt;{M(f)}&gt;&gt; M(B) \\
+@V{a}VV @VV{b}V \\
+A @&gt;&gt;{f}&gt; B
+\end{CD}
+\]</span></p>
+<p>Para la mónada de acción de grupo, ese cuadrado se reduce, elemento a elemento, a la ecuación de equivarianza</p>
+<p><span class="math display">\[f(g \blacktriangleright x) = g \blacktriangleright f(x).\]</span></p>
+<p>Con la traslación se recupera la restricción habitual de las convoluciones: <span class="math inline">\(f(x(i - i&#39;, j - j&#39;)) = f(x)(i - i&#39;, j - j&#39;)\)</span>. Es el resultado central de la primera parte: el objetivo del GDL, encontrar capas equivariantes, consiste en encontrar homomorfismos de álgebras para mónadas asociadas a acciones de grupo. Si el codominio lleva la acción trivial (la proyección que olvida <span class="math inline">\(g\)</span>), la ecuación se convierte en la de invarianza, <span class="math inline">\(f(g \blacktriangleright x) = f(x)\)</span>. Los apéndices derivan con la misma plantilla las redes neuronales de grafos (grupo de permutaciones <span class="math inline">\(\Sigma_n\)</span>), las <span class="smallcaps">CNN</span> esféricas (grupo <span class="math inline">\(\mathrm{SO}(3)\)</span>) y las G-CNN.</p>
+<!-- FIGURA: Gavranović et al., ejemplo 2.6 (p. 4), diagrama conmutativo de G × R^{Z_w×Z_h}. Opcional: el cuadrado CD de arriba ya lo reproduce. Recortar y guardar como img/posts/aprendizaje-profundo-categorico/equivarianza.png si se prefiere la versión del PDF. -->
+</section>
+<section id="del-grupo-al-reparto-de-pesos" class="level2">
+<h2>Del grupo al reparto de pesos</h2>
+<p>Para pasar de las restricciones a las capas concretas hay que fijar la categoría en que viven los morfismos. La elección habitual es <span class="math inline">\(\mathsf{Vect}\)</span>: espacios vectoriales de dimensión finita y aplicaciones lineales. Ahí los morfismos son matrices, y la condición de equivarianza restringe sus entradas. El resultado es lo que en la práctica se llama <em>reparto</em> o <em>atadura de pesos</em> (<em>weight sharing</em>, <em>weight tying</em>).</p>
+<p>El apéndice H lo calcula con el caso mínimo: dos píxeles. Sea <span class="math inline">\(f_{\mathbf{W}} : \mathbb{R}^{\mathbb{Z}_2} \to \mathbb{R}^{\mathbb{Z}_2}\)</span> la aplicación lineal dada por</p>
+<p><span class="math display">\[\mathbf{W} = \begin{bmatrix} w_1 &amp; w_3 \\ w_2 &amp; w_4 \end{bmatrix},\]</span></p>
+<p>y sea la acción del grupo de traslaciones <span class="math inline">\((\mathbb{Z}_2, +, 0)\)</span>, que en este caso consiste en intercambiar los dos píxeles. Exigir que <span class="math inline">\(f_{\mathbf{W}}\)</span> sea equivariante obliga a <span class="math inline">\(w_3 = w_2\)</span> y <span class="math inline">\(w_4 = w_1\)</span>:</p>
+<p><span class="math display">\[\mathbf{W} = \begin{bmatrix} w_1 &amp; w_2 \\ w_2 &amp; w_1 \end{bmatrix}.\]</span></p>
+<p>De cuatro parámetros libres quedan dos, y la matriz resulta simétrica. En dominios mayores, la misma restricción obliga a que <span class="math inline">\(\mathbf{W}\)</span> sea <em>circulante</em>, y las matrices circulantes son lo que en redes neuronales se llama capas convolucionales. Si en lugar de equivarianza se pide invarianza, las filas de la matriz quedan iguales,</p>
+<p><span class="math display">\[\mathbf{W} = \begin{bmatrix} w_1 &amp; w_3 \\ w_1 &amp; w_3 \end{bmatrix},\]</span></p>
+<p>y los dos píxeles de salida toman el mismo valor: la capa equivale a un producto escalar con <span class="math inline">\([\,w_1 \;\; w_3\,]\)</span>, que elimina la estructura de rejilla.</p>
+</section>
+<section id="más-allá-de-los-grupos-álgebras-de-endofuntores" class="level2">
+<h2>Más allá de los grupos: álgebras de endofuntores</h2>
+<p>Las mónadas de acción de grupo son elegantes, pero heredan las limitaciones de la teoría de grupos. El paso siguiente del artículo es quitar estructura: en lugar de una mónada, basta un <strong>endofuntor</strong> <span class="math inline">\(F\)</span>, y un álgebra para <span class="math inline">\(F\)</span> es simplemente un par <span class="math inline">\((A, a)\)</span> con <span class="math inline">\(a : F(A) \to A\)</span>, sin ecuaciones adicionales. Con esta noción más débil reaparecen construcciones conocidas de la informática.</p>
+<p>Las <strong>listas</strong> de elementos de <span class="math inline">\(A\)</span> forman un álgebra del endofuntor <span class="math inline">\(1 + A \times -\)</span>, con la aplicación <span class="math inline">\([\mathsf{Nil}, \mathsf{Cons}]\)</span>; es la definición inductiva habitual:</p>
+<div class="sourceCode"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">List</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Nil</span>
+<span class="w">            </span><span class="o">|</span><span class="w"> </span><span class="kt">Cons</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="kt">List</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+
+<p>Los <strong>árboles binarios</strong> con hojas etiquetadas en <span class="math inline">\(A\)</span> forman un álgebra de <span class="math inline">\(A + (-)^2\)</span>, con <span class="math inline">\([\mathsf{Leaf}, \mathsf{Node}]\)</span>.</p>
+<p>Un homomorfismo de álgebras desde las listas a cualquier otra <span class="math inline">\((1 + A \times -)\)</span>-álgebra <span class="math inline">\((X, [r_0, r_1])\)</span> es necesariamente un <em>fold</em>, el pliegue de la programación funcional:</p>
+<div class="sourceCode"><pre><span></span><span class="nf">f_r</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">List</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">x</span>
+<span class="nf">f_r</span><span class="w"> </span><span class="kt">Nil</span><span class="w">         </span><span class="ow">=</span><span class="w"> </span><span class="n">r_0</span><span class="w"> </span><span class="nb">()</span>
+<span class="nf">f_r</span><span class="w"> </span><span class="p">(</span><span class="kt">Cons</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="n">r_1</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="p">(</span><span class="n">f_r</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+</pre></div>
+
+<p>Desplegar la conmutatividad del cuadrado da dos ecuaciones:</p>
+<p><span class="math display">\[f_r(\mathsf{Nil}) = r_0(\bullet), \qquad f_r(\mathsf{Cons}(h, t)) = r_1(h, f_r(t)).\]</span></p>
+<p>Los autores subrayan que estas ecuaciones <em>generalizan</em> las restricciones de equivarianza: como en el caso de los grupos, especifican una función que se comporta de manera predecible frente a ciertas operaciones, solo que ahora la operación (añadir un elemento delante de una lista) no es invertible y no es una acción de grupo. Además, el homomorfismo desde las listas es único, porque las listas son el objeto inicial en la categoría de <span class="math inline">\((1 + A \times -)\)</span>-álgebras. Para los árboles ocurre lo mismo: el homomorfismo es un pliegue sobre el árbol, implementado por recursión estructural.</p>
+</section>
+<section id="coálgebras-y-autómatas" class="level2">
+<h2>Coálgebras y autómatas</h2>
+<p>Invirtiendo la flecha se obtienen las <strong>coálgebras</strong>: pares <span class="math inline">\((A, a)\)</span> con <span class="math inline">\(a : A \to F(A)\)</span>. Si las álgebras sirven para modelar cómputos que terminan, las coálgebras modelan cómputos potencialmente infinitos, cuya garantía no es la terminación sino la <em>productividad</em>: servidores, sistemas operativos, autómatas.</p>
+<p>El ejemplo principal es la <strong>máquina de Mealy</strong>: dados conjuntos de entradas <span class="math inline">\(I\)</span> y salidas <span class="math inline">\(O\)</span>, las máquinas de Mealy forman una coálgebra del endofuntor <span class="math inline">\(I \to O \times -\)</span>. La definición es coinductiva: una máquina que, dada una entrada, produce una salida y otra máquina.</p>
+<div class="sourceCode"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Mealy</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">MkMealy</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">next</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="w"> </span><span class="kt">Mealy</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>Los homomorfismos de coálgebras hacia las máquinas de Mealy son <em>unfolds</em>, despliegues: funciones que generan una estructura potencialmente infinita a partir de un solo valor, implementadas por corecursión. También satisfacen ecuaciones de «equivarianza generalizada», ahora para un autómata interactivo que no es invertible y cuya salida depende de su estado y de entradas desconocidas de antemano. Los apéndices tratan del mismo modo los <em>streams</em> (coálgebras de <span class="math inline">\(O \times -\)</span>) y las máquinas de Moore (coálgebras de <span class="math inline">\(O \times (I \to -)\)</span>).</p>
+<p>El caso de los streams da un ejemplo claro de reparto de pesos. Si se trabaja en <span class="math inline">\(\mathsf{Vect}\)</span> con una coálgebra sobre <span class="math inline">\(\mathbb{R}\)</span> dada por dos escalares <span class="math inline">\(w_o\)</span> (salida) y <span class="math inline">\(w_n\)</span> (estado siguiente), el homomorfismo universal hacia los streams es una matriz infinita que queda completamente determinada por esos dos números:</p>
+<p><span class="math display">\[\begin{bmatrix} w_o &amp; w_n w_o &amp; w_n^2 w_o &amp; w_n^3 w_o &amp; \cdots \end{bmatrix}\]</span></p>
+<p>Es, en miniatura, lo que hace una red recurrente desenrollada en el tiempo: repetir los mismos pesos en cada paso.</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Endofuntor</th>
+<th>Estructura</th>
+<th>Tipo</th>
+<th>Morfismo universal</th>
+<th>Red neuronal</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(G \times -\)</span> (mónada)</td>
+<td>acción de grupo</td>
+<td>álgebra</td>
+<td>aplicación equivariante</td>
+<td>capa del <span class="smallcaps">GDL</span> (CNN, GNN)</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(1 + A \times -\)</span></td>
+<td>listas</td>
+<td>álgebra</td>
+<td><em>fold</em></td>
+<td><span class="smallcaps">RNN</span> que pliega</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(A + (-)^2\)</span></td>
+<td>árboles binarios</td>
+<td>álgebra</td>
+<td><em>fold</em> sobre árboles</td>
+<td>red recursiva</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(O \times -\)</span></td>
+<td><em>streams</em></td>
+<td>coálgebra</td>
+<td><em>unfold</em></td>
+<td><span class="smallcaps">RNN</span> que despliega</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(I \to O \times -\)</span></td>
+<td>máquinas de Mealy</td>
+<td>coálgebra</td>
+<td><em>unfold</em></td>
+<td><span class="smallcaps">RNN</span> completa</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(O \times (I \to -)\)</span></td>
+<td>máquinas de Moore</td>
+<td>coálgebra</td>
+<td><em>unfold</em></td>
+<td>celda tipo Moore</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="parámetros-la-2-categoría-para" class="level2">
+<h2>Parámetros: la 2-categoría Para</h2>
+<p>Hasta aquí, todo el análisis del reparto de pesos supone que los homomorfismos son lineales, porque se los coloca en <span class="math inline">\(\mathsf{Vect}\)</span>. Eso limita el estudio a capas sueltas. Una celda de red recurrente, en cambio, es una composición de aplicaciones lineales y no lineales:</p>
+<blockquote>
+<p>«In the standard example of recurrent neural networks, an <span class="smallcaps">RNN</span> cell is an <em>arbitrary</em> differentiable function, usually composed out of a sequence of linear and non-linear maps.» (Gavranović et al., p. 7)</p>
+</blockquote>
+<p>Además, en la práctica las redes son funciones <em>paramétricas</em>, y en bibliotecas como <span class="smallcaps">JAX</span> los parámetros se pasan explícitamente en cada llamada. Para tratar ambas cosas sin abandonar el marco, el artículo sube un nivel: de las categorías a las <strong>2-categorías</strong>, que además de objetos y morfismos tienen morfismos entre morfismos (2-morfismos). El ejemplo canónico es <span class="math inline">\(\mathsf{Cat}\)</span>, cuyos objetos son categorías, cuyos morfismos son funtores y cuyos 2-morfismos son transformaciones naturales.</p>
+<p>La 2-categoría que interesa es <span class="math inline">\(\mathsf{Para}\)</span> (Cruttwell et al., 2022; Capucci et al., 2022). Sus objetos son los de <span class="math inline">\(\mathsf{Set}\)</span>, pero un morfismo <span class="math inline">\(A \to B\)</span> no es una función, sino un par <span class="math inline">\((P, f)\)</span> con <span class="math inline">\(f : P \times A \to B\)</span>: una función que depende de un espacio de parámetros <span class="math inline">\(P\)</span>. En los diagramas de cuerdas, el parámetro se dibuja en vertical, para indicar que forma parte del morfismo y no de los objetos. Al componer dos morfismos paramétricos, los espacios de parámetros se componen en paralelo: <span class="math inline">\((P, f)\)</span> seguido de <span class="math inline">\((Q, g)\)</span> da un morfismo con parámetros <span class="math inline">\(Q \times P\)</span>.</p>
+<!-- FIGURA: Gavranović et al., fig. 4 (p. 22). Recortar del PDF y guardar como img/posts/aprendizaje-profundo-categorico/fig4-composicion-para.png -->
+<figure>
+<img src="/img/posts/aprendizaje-profundo-categorico/fig4-composicion-para.png" alt="Composición de morfismos paramétricos: los parámetros se acumulan en el eje vertical (Gavranović et al., fig. 4)." />
+<figcaption aria-hidden="true">Composición de morfismos paramétricos: los parámetros se acumulan en el eje vertical (Gavranović et al., fig. 4).</figcaption>
+</figure>
+<p>Los 2-morfismos de <span class="math inline">\(\mathsf{Para}\)</span> son <em>reparametrizaciones</em>: aplicaciones <span class="math inline">\(r : P&#39; \to P\)</span> entre espacios de parámetros que convierten un morfismo paramétrico en otro. Y aquí aparece el tratamiento explícito del reparto de pesos: un morfismo <span class="math inline">\((P \times P, f)\)</span>, que usa dos copias de los parámetros, se convierte en uno con los pesos atados precomponiéndolo con la aplicación de copia</p>
+<p><span class="math display">\[\Delta_P : P \to P \times P, \qquad p \mapsto (p, p).\]</span></p>
+<!-- FIGURA: Gavranović et al., p. 8 (diagrama sin número). Guardar como img/posts/aprendizaje-profundo-categorico/atadura-de-pesos.png -->
+<figure>
+<img src="/img/posts/aprendizaje-profundo-categorico/atadura-de-pesos.png" alt="Atadura de pesos: un morfismo con dos copias de P se reparametriza con la copia Δ_P (Gavranović et al., p. 8)." />
+<figcaption aria-hidden="true">Atadura de pesos: un morfismo con dos copias de P se reparametriza con la copia Δ_P (Gavranović et al., p. 8).</figcaption>
+</figure>
+<p>Atar pesos es, literalmente, reparametrizar a través de una copia. Los autores formulan su tesis en estos términos:</p>
+<blockquote>
+<p>«It is our position that the 2-category Para and 2-categorical algebra valued in it provide a <em>formal theory of neural network architectures</em>, establish <strong>formal criteria</strong> for weight tying correctness and <strong>inform design</strong> of new architectures.» (Gavranović et al., p. 8)</p>
+</blockquote>
+</section>
+<section id="redes-recurrentes-como-álgebras-laxas" class="level2">
+<h2>Redes recurrentes como álgebras laxas</h2>
+<p>En una 2-categoría, un cuadrado no tiene por qué limitarse a conmutar o no conmutar: puede conmutar estrictamente, conmutar salvo isomorfismo (<em>pseudo</em>), o tener un 2-morfismo que va de un camino al otro en una dirección (<em>lax</em>) o en la contraria (<em>oplax</em>).</p>
+<!-- FIGURA: Gavranović et al., p. 8 (diagrama sin número). Guardar como img/posts/aprendizaje-profundo-categorico/cuadrados-2-celdas.png -->
+<figure>
+<img src="/img/posts/aprendizaje-profundo-categorico/cuadrados-2-celdas.png" alt="Un cuadrado en una 2-categoría puede conmutar, pseudo-conmutar, conmutar laxamente u oplaxamente (Gavranović et al., p. 8)." />
+<figcaption aria-hidden="true">Un cuadrado en una 2-categoría puede conmutar, pseudo-conmutar, conmutar laxamente u oplaxamente (Gavranović et al., p. 8).</figcaption>
+</figure>
+<p>De estas variantes, el artículo se ocupa de las <strong>álgebras laxas</strong>, que bastan para derivar redes recursivas y recurrentes desde primeros principios.</p>
+<p>La construcción es la misma de antes, trasladada a <span class="math inline">\(\mathsf{Para}\)</span>. Gracias a una propiedad técnica (la <em>fuerza</em> actegórica del endofuntor), cada endofuntor de la sección anterior se eleva a un 2-endofuntor sobre <span class="math inline">\(\mathsf{Para}(\mathsf{Set})\)</span>, y sus álgebras son ahora celdas paramétricas:</p>
+<ul>
+<li>un álgebra de <span class="math inline">\(\mathsf{Para}(1 + A \times -)\)</span> consiste en un estado oculto <span class="math inline">\(S\)</span>, una elección de estado inicial y una celda <span class="math inline">\(P \times A \times S \to S\)</span>: una <strong>red recurrente que pliega</strong> una secuencia de entradas;</li>
+<li>un álgebra de <span class="math inline">\(\mathsf{Para}(A + (-)^2)\)</span> es una <strong>celda de red recursiva</strong> sobre árboles;</li>
+<li>una coálgebra de <span class="math inline">\(\mathsf{Para}(O \times -)\)</span> es una <strong>red recurrente que despliega</strong> un stream de salidas a partir de un estado;</li>
+<li>una coálgebra de <span class="math inline">\(\mathsf{Para}(I \to O \times -)\)</span> es una celda que consume estado y entrada y produce salida y nuevo estado: una <strong>red recurrente completa</strong>.</li>
+</ul>
+<!-- FIGURA: Gavranović et al., fig. 1 (p. 8). Recortar del PDF y guardar como img/posts/aprendizaje-profundo-categorico/fig1-coalgebras-parametricas.png -->
+<figure>
+<img src="/img/posts/aprendizaje-profundo-categorico/fig1-coalgebras-parametricas.png" alt="(Co)álgebras paramétricas para cinco tipos de red: recurrente que pliega, que despliega, recursiva, recurrente completa y tipo Moore (Gavranović et al., fig. 1)." />
+<figcaption aria-hidden="true">(Co)álgebras paramétricas para cinco tipos de red: recurrente que pliega, que despliega, recursiva, recurrente completa y tipo Moore (Gavranović et al., fig. 1).</figcaption>
+</figure>
+<p>El último caso lleva a una observación que los autores destacan:</p>
+<blockquote>
+<p>«This suggests that recurrent neural networks can be thought of as learnable Mealy machines, a perspective seldom advocated for in the literature.» (Gavranović et al., p. 29)</p>
+</blockquote>
+<!-- FIGURA: Gavranović et al., fig. 13 (p. 31). Guardar como img/posts/aprendizaje-profundo-categorico/fig13-mealy.png -->
+<figure>
+<img src="/img/posts/aprendizaje-profundo-categorico/fig13-mealy.png" alt="Máquina de Mealy paramétrica desenrollada: una red recurrente que recibe I y emite O en cada paso, con el mismo parámetro P (Gavranović et al., fig. 13)." />
+<figcaption aria-hidden="true">Máquina de Mealy paramétrica desenrollada: una red recurrente que recibe I y emite O en cada paso, con el mismo parámetro P (Gavranović et al., fig. 13).</figcaption>
+</figure>
+<p>Lo que conecta una celda con la red completa es el <em>desenrollado</em>. El apéndice J lo construye como un homomorfismo laxo de álgebras: para la red que pliega listas, el homomorfismo es el análogo paramétrico de un <em>fold</em>,</p>
+<div class="sourceCode"><pre><span></span><span class="nf">f_rcnt</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="kt">List</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">x</span>
+<span class="nf">f_rcnt</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="kt">Nil</span><span class="w">          </span><span class="ow">=</span><span class="w"> </span><span class="n">cell_rcnt</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="p">(</span><span class="n">inl</span><span class="w"> </span><span class="nb">()</span><span class="p">)</span>
+<span class="nf">f_rcnt</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="p">(</span><span class="kt">Cons</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">as</span><span class="p">)</span><span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="n">cell_rcnt</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="p">(</span><span class="n">inr</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="n">f_rcnt</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="n">as</span><span class="p">))</span>
+</pre></div>
+
+<p>donde la llamada recursiva usa el mismo parámetro <code>p</code>. El 2-morfismo que hace funcionar el cuadrado laxo es precisamente la copia <span class="math inline">\(\Delta_P\)</span>: ata el parámetro de la celda en cada paso al de la llamada recursiva.</p>
+<!-- FIGURA: Gavranović et al., fig. 10 (p. 30). Recortar del PDF y guardar como img/posts/aprendizaje-profundo-categorico/fig10-rnn-desenrollada.png -->
+<figure>
+<img src="/img/posts/aprendizaje-profundo-categorico/fig10-rnn-desenrollada.png" alt="Diagrama de cuerdas de una red recurrente que pliega, desenrollada: el parámetro P se copia en cada paso (Gavranović et al., fig. 10)." />
+<figcaption aria-hidden="true">Diagrama de cuerdas de una red recurrente que pliega, desenrollada: el parámetro P se copia en cada paso (Gavranović et al., fig. 10).</figcaption>
+</figure>
+<p>El resultado general que justifica todo esto es el teorema G.10: las celdas laxas de un álgebra para <span class="math inline">\(\mathsf{Para}(T)\)</span>, con <span class="math inline">\(T\)</span> una mónada fuerte, son exactamente un <em>comonoide</em> sobre el espacio de parámetros, es decir, un par de aplicaciones <span class="math inline">\(!_P : P \to 1\)</span> (borrar) y <span class="math inline">\(\Delta_P : P \to P \times P\)</span> (copiar) que cumplen las leyes de comonoide. El reparto de pesos no se añade a mano: sale de la estructura.</p>
+<blockquote>
+<p>«The fact that we can duplicate or delete entries in vectors—the essence of tying weights—is the informal face of this comonoid structure.» (Gavranović et al., pp. 8–9)</p>
+</blockquote>
+<p>Queda una pieza conjetural. En el caso 1-dimensional, cada endofuntor tiene asociada una <em>mónada algebraicamente libre</em>, cuya categoría de álgebras equivale a la de álgebras del endofuntor, y que se obtiene iterando el endofuntor hasta que se estabiliza (la construcción transfinita de Kelly). Los autores conjeturan (conjetura G.12) que lo mismo vale en <span class="math inline">\(\mathsf{Para}\)</span>, de modo que las redes recurrentes y recursivas serían álgebras laxas de mónadas paramétricas libres generadas por endofuntores paramétricos.</p>
+</section>
+<section id="nuevos-horizontes" class="level2">
+<h2>Nuevos horizontes</h2>
+<p>La última sección del cuerpo del artículo es programática. Los autores sostienen que su marco da «la definición correcta» de muchas variantes de redes estructuradas, como contrapartes paramétricas universales de nociones conocidas de la informática:</p>
+<blockquote>
+<p>«Our framework gives <em>the correct definition</em> of numerous variants of structured networks as universal parametric counterparts of known notions in computer science.» (Gavranović et al., p. 9)</p>
+</blockquote>
+<p>De ahí derivan varias líneas de trabajo:</p>
+<ul>
+<li><strong>Restricciones aprendibles más generales.</strong> Como las álgebras de mónadas pueden ser paramétricas y laxas, cabría diseñar redes que no aprendan solo leyes de conservación, sino argumentos lógicos o código verificablemente correctos; por ejemplo, redes que solo aprendan funciones bien tipadas, eligiendo las álgebras adecuadas como dominio y codominio.</li>
+<li><strong>Contenedores y funtores polinómicos.</strong> Tomarlos como endofuntores daría una manera uniforme de razonar sobre tipos de datos y funciones polimórficas, y, combinada con la diferenciación automática puramente funcional, abriría el diseño de redes <em>type-safe</em> en lenguajes funcionales.</li>
+<li><strong>No linealidades.</strong> El <span class="smallcaps">GDL</span> trata sobre todo capas lineales sueltas y no explica la elección de las no linealidades, que en la práctica importa mucho. Este marco razona sobre bloques que abarcan varias capas, como muestran los ejemplos de reparto de pesos.</li>
+<li><strong>Sesgo inductivo y verificación.</strong> Los autores esperan que una lógica categórica aclare la relación entre arquitectura y razonamiento, y permita evaluar sesgo, equidad y corrección en sistemas desplegados a escala: una <span class="smallcaps">IA</span> «no meramente explicable, sino verificable».</li>
+</ul>
+</section>
+<section id="valoración" class="level2">
+<h2>Valoración</h2>
+<p>El artículo es un <em>position paper</em> presentado en <span class="smallcaps">ICML</span> 2024, y conviene leerlo como tal. Su aportación principal es una reformulación unificada: muestra que la equivarianza del GDL, los pliegues y despliegues de la programación funcional y el reparto de pesos de las redes recurrentes son casos de una misma construcción, el homomorfismo de álgebras, y que la atadura de pesos tiene una forma precisa (la reparametrización por copia, la estructura de comonoide). El ejemplo de los dos píxeles y el de los streams muestran bien cómo una condición abstracta se traduce en igualdades entre entradas de una matriz.</p>
+<p>Dos cuestiones quedan abiertas. La primera es el alcance de la afirmación «todas las arquitecturas». Las derivaciones detalladas cubren capas equivariantes y redes recurrentes y recursivas; los transformadores y la atención solo aparecen a través de su interpretación previa en el GDL. Parte del aparato 2-categórico queda en esbozo: el texto reconoce que la falta de espacio impide el detalle adecuado, una demostración se «deja al lector» y la equivalencia que llevaría de los endofuntores a las mónadas libres en <span class="math inline">\(\mathsf{Para}\)</span> es una conjetura. La segunda es el paso de recuperar a proponer. El marco reconstruye con rigor arquitecturas que ya existían, pero el artículo no incluye ninguna arquitectura nueva derivada de él ni experimentos que la evalúen. Que la teoría «informe el diseño», como promete la tesis, depende de trabajo posterior.</p>
+</section>
+<details class="footnotes-details" open><summary>Notas al pie</summary><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Bruno Gavranović, Paul Lessard, Andrew Dudzik, Tamara von Glehn, João G. M. Araújo y Petar Veličković, «Position: Categorical Deep Learning is an Algebraic Theory of All Architectures», <em>Proceedings of the 41st International Conference on Machine Learning</em> (Viena), <span class="smallcaps">PMLR</span> 235, 2024; versión 2 (6 de junio de 2024), <a href="https://arxiv.org/abs/2402.15332">arXiv:2402.15332</a>. Las citas literales están en inglés, con el número de página del preprint.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></details>]]></summary>
+</entry>
+<entry>
+    <title>Prueba de funcionalidades</title>
+    <link href="https://a-peirogon.github.io/posts/prueba-de-funcionalidades.html" />
+    <id>https://a-peirogon.github.io/posts/prueba-de-funcionalidades.html</id>
+    <published>2026-10-04T00:00:00Z</published>
+    <updated>2026-10-04T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<div class="epigraph">
+<blockquote>
+<p>«Todo lo que puede ser dicho, puede ser dicho con claridad.»</p>
+<p>Ludwig Wittgenstein, <em>Tractatus</em></p>
+</blockquote>
+</div>
+<section id="texto-y-tipografía" class="level2">
+<h2>Texto y tipografía</h2>
+<p>Un párrafo normal, justificado y con separación silábica. Las comillas «angulares», las “inglesas” y las ‘simples’ se respetan; los guiones largos —como este— y los rangos 1914–1918 también. Las siglas en mayúsculas, como <span class="smallcaps">UNESCO</span> o ADN, pasan solas a versalitas. Hay <em>cursiva</em>, <strong>negrita</strong>, <strong><em>ambas</em></strong>, <del>tachado</del>, super<sup>índice</sup> y sub<sub>índice</sub>, además de <code>código en línea</code>.</p>
+<p>Un segundo párrafo comienza con sangría, como en un libro. Las cifras de estilo antiguo se notan en números como 1234567890 dentro del texto corrido.</p>
+</section>
+<section id="enlaces" class="level2">
+<h2>Enlaces</h2>
+<ul>
+<li>Wikipedia, con su ícono: <a href="https://es.wikipedia.org/wiki/Teor%C3%ADa_de_categor%C3%ADas">teoría de categorías</a></li>
+<li>GitHub: <a href="https://github.com/a-peirogon/a-peirogon.github.io">el código del sitio</a></li>
+<li>arXiv: <a href="https://arxiv.org/abs/0903.0340">Baez &amp; Stay, <em>Rosetta Stone</em></a></li>
+<li>Un PDF: <a href="https://arxiv.org/pdf/0908.3347.pdf">Selinger, <em>A survey of graphical languages</em></a></li>
+<li>Un DOI: <a href="https://doi.org/10.1111/j.1746-8361.1989.tb00933.x">Worrall, 1989</a></li>
+<li>Interno, a la wiki: <a href="/wiki/matematicas/monadas.html">Mónadas</a></li>
+<li>Interno, a otra sección de esta página: <a href="#matemáticas">ir a Matemáticas</a></li>
+</ul>
+</section>
+<section id="notas-al-pie-y-notas-al-margen" class="level2">
+<h2>Notas al pie y notas al margen</h2>
+<p>Las notas se muestran al margen en pantallas anchas y al final en las demás.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> Una nota larga pone a prueba el recorte y el desplazamiento de las notas al margen.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> También hay notas en línea, escritas junto al texto.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+</section>
+<section id="citas" class="level2">
+<h2>Citas</h2>
+<blockquote>
+<p>Una cita en bloque, con su borde y su fondo.</p>
+<blockquote>
+<p>Una cita anidada dentro de la anterior.</p>
+<blockquote>
+<p>Y un tercer nivel.</p>
+</blockquote>
+</blockquote>
+</blockquote>
+</section>
+<section id="listas" class="level2">
+<h2>Listas</h2>
+<ul>
+<li>Un elemento</li>
+<li>Otro, con una lista anidada:
+<ul>
+<li>Primer subelemento</li>
+<li>Segundo subelemento
+<ul>
+<li>Y un tercer nivel</li>
+</ul></li>
+</ul></li>
+<li>Un último elemento</li>
+</ul>
+<ol type="1">
+<li>Primero</li>
+<li>Segundo
+<ol type="1">
+<li>Subpaso en numeración romana</li>
+<li>Otro subpaso</li>
+</ol></li>
+<li>Tercero</li>
+</ol>
+<dl>
+<dt>Término</dt>
+<dd>
+Una lista de definiciones: el término y, debajo, su definición.
+</dd>
+<dt>Otro término</dt>
+<dd>
+Su definición correspondiente.
+</dd>
+</dl>
+</section>
+<section id="código" class="level2">
+<h2>Código</h2>
+<p>Haskell, resaltado con Pygments:</p>
+<div class="sourceCode"><pre><span></span><span class="c1">-- | Una mónada sobre una categoría es un monoide en sus endofuntores.</span>
+<span class="kr">class</span><span class="w"> </span><span class="kt">Applicative</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)</span><span class="w">  </span><span class="ow">::</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">b</span>
+<span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">pure</span>
+
+<span class="nf">main</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="nb">()</span>
+<span class="nf">main</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mapM_</span><span class="w"> </span><span class="n">print</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="p">]]</span>
+</pre></div>
+
+<p>Python:</p>
+<div class="sourceCode"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fibonacci, en versión iterativa.&quot;&quot;&quot;</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+    <span class="k">return</span> <span class="n">a</span>
+</pre></div>
+
+<p>Y un bloque sin lenguaje:</p>
+<pre><code>texto preformateado, sin resaltado
+    respetando los espacios</code></pre>
+</section>
+<section id="matemáticas" class="level2">
+<h2>Matemáticas</h2>
+<p>En línea: si <span class="math inline">\(f : A \to B\)</span> y <span class="math inline">\(g : B \to C\)</span>, entonces <span class="math inline">\(g \circ f : A \to C\)</span>. En bloque:</p>
+<p><span class="math display">\[
+\mu \circ T\mu = \mu \circ \mu T, \qquad \mu \circ T\eta = \mu \circ \eta T = 1_T
+\]</span></p>
+</section>
+<section id="diagramas-tikz" class="level2">
+<h2>Diagramas TikZ</h2>
+<figure class="tikz-figure"><img src="/generated/tikz/eefbca1f1dfffd55c9cdf50bb867bba0cb6c757bcdc4b4eac899091f93c5c48e.svg" width="154" alt="TikZ diagram" class="tikz-image"><figcaption>Cuadrado conmutativo, compilado a SVG con TikZ.</figcaption></figure>
+</section>
+<section id="tablas" class="level2">
+<h2>Tablas</h2>
+<p>Las tablas se pueden ordenar haciendo clic en los encabezados.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Estructura</th>
+<th>Objetos</th>
+<th>Morfismos</th>
+<th>Año</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Set</strong></td>
+<td>conjuntos</td>
+<td>funciones</td>
+<td>1945</td>
+</tr>
+<tr class="even">
+<td><strong>Grp</strong></td>
+<td>grupos</td>
+<td>homomorfismos</td>
+<td>1945</td>
+</tr>
+<tr class="odd">
+<td><strong>Top</strong></td>
+<td>espacios</td>
+<td>funciones continuas</td>
+<td>1945</td>
+</tr>
+<tr class="even">
+<td><strong>Vect</strong></td>
+<td>esp. vectoriales</td>
+<td>aplicaciones lineales</td>
+<td>1945</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="imágenes" class="level2">
+<h2>Imágenes</h2>
+<figure>
+<img src="/img/obras/noche_estrellada.jpg" alt="La noche estrellada, Vincent van Gogh, 1889." />
+<figcaption aria-hidden="true"><em>La noche estrellada</em>, Vincent van Gogh, 1889.</figcaption>
+</figure>
+</section>
+<section id="cajas" class="level2">
+<h2>Cajas</h2>
+<div class="portal-box portal-box-collapsible"><div class="portal-box-title">Recursos externos (plegable)</div><div class="portal-box-body"><ul>
+<li><a href="https://ncatlab.org">nLab</a> — la referencia obligada en teoría de categorías</li>
+<li><a href="https://plato.stanford.edu">Stanford Encyclopedia of Philosophy</a></li>
+<li><a href="https://arxiv.org/list/math.CT/recent">arXiv: math.CT</a></li>
+</ul></div><button type="button" class="portal-box-toggle" aria-expanded="true"><span class="part bottom"><span class="label">Click to expand</span><span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path d="M34.52 239.03L228.87 44.69c9.37-9.37 24.57-9.37 33.94 0l22.67 22.67c9.36 9.36 9.37 24.52.04 33.9L131.49 256l154.02 154.75c9.34 9.38 9.32 24.54-.04 33.9l-22.67 22.67c-9.37 9.37-24.57 9.37-33.94 0L34.52 272.97c-9.37-9.37-9.37-24.57 0-33.94z"></path></svg></span></span></button></div>
+<div class="portal-box"><div class="portal-box-title">Caja fija</div><div class="portal-box-body"><p>Una caja con <code>plegable="no"</code> no se pliega: su contenido siempre está a la vista.</p></div></div>
+<hr />
+</section>
+<section id="matemáticas-1" class="level2">
+<h2>Matemáticas</h2>
+<p>Una segunda sección con el mismo nombre, para comprobar que los anclajes de la tabla de contenidos no se confunden.</p>
+</section>
+<details class="footnotes-details" open><summary>Notas al pie</summary><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Una nota corta.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Una nota larga, con varios párrafos y formato. <em>Cursiva</em>, <strong>negrita</strong> y <code>código</code>.</p>
+<p>Segundo párrafo de la misma nota, con un enlace a <a href="https://es.wikipedia.org/wiki/Nota_al_pie">Wikipedia</a> y una fórmula: <span class="math inline">\(e^{i\pi} + 1 = 0\)</span>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>Esta nota se escribió en línea, entre corchetes, sin definirla aparte.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></details>]]></summary>
+</entry>
+
+</feed>
